@@ -1,0 +1,6 @@
+.DS_Store 
+.venv/
+atg_venv/
+videos/
+__pycache__/ 
+src/__pycache__

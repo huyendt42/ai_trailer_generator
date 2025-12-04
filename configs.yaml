@@ -1,0 +1,38 @@
+project_dir: 'projects'
+
+project_name: 'LOL'
+
+plot_filename: input_plot.txt
+
+video_path: 'videos/video.mp4'
+
+video_retrieval: 
+  video_url: 'https://www.youtube.com/watch?v=3nzOS0tvXvc'
+
+plot_retrieval:
+  source: manual       
+  video_id:             
+  game_name: "LOL"
+ 
+subplot: 
+  split_char: '\n'
+  n_subplots: 6
+voice:
+  model_id: 'tts_models/multilingual/multi-dataset/xtts_v2'
+  device: 'cpu'
+  reference_voice_path: 'voices/sample_voice.wav'
+  tts_language: 'en'
+  n_audios: 1
+
+frame_ranking:
+    model_id: "clip-ViT-B-32"
+    device: "cpu"
+    similarity_batch_size: 32
+    n_retrieved_images: 1
+
+clip:
+  min_clip_len: 2.5
+
+audio_clip:
+  clip_volume: 0.1
+  voice_volume: 1.0
