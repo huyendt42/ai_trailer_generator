@@ -1,47 +1,85 @@
-import os
+import logging
 from pathlib import Path
-from moviepy.editor import VideoFileClip, AudioFileClip, CompositeAudioClip
-from common import CLIPS_DIR, VOICES_DIR, AUDIO_CLIPS_DIR, configs
+from moviepy.editor import VideoFileClip, AudioFileClip
 
-AUDIO_CLIPS_DIR.mkdir(parents=True, exist_ok=True)
+from common import CLIPS_DIR, VOICES_DIR, AUDIO_CLIPS_DIR, configs, list_scenes
 
-n_subplots = configs["subplot"]["n_subplots"]
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-clip_volume = configs["audio_clip"]["clip_volume"]
-voice_volume = configs["audio_clip"]["voice_volume"]
+def main():
+    logger.info("Starting audio mixing...")
+    AUDIO_CLIPS_DIR.mkdir(parents=True, exist_ok=True)
 
-for i in range(1, n_subplots + 1):
+    # Lấy volume từ config (mặc định 1.0 nếu thiếu)
+    audio_cfg = configs.get("audio_clip", {})
+    clip_vol = float(audio_cfg.get("clip_volume", 0.0)) # Mặc định tắt tiếng video gốc (nếu là ảnh thì ko có tiếng)
+    voice_vol = float(audio_cfg.get("voice_volume", 1.5)) # Tăng voice lên chút cho to
 
-    scene_clip_dir = CLIPS_DIR / f"scene_{i}"
-    scene_audio_dir = VOICES_DIR / f"scene_{i}"
+    # Lấy danh sách scene từ folder CLIPS_DIR
+    scenes = list_scenes(CLIPS_DIR)
+    
+    if not scenes:
+        logger.error(f"No clips found in {CLIPS_DIR}. Did make_clip.py run correctly?")
+        return
 
-    if not scene_clip_dir.exists() or not scene_audio_dir.exists():
-        print(f"Scene {i}: Missing clip or audio folder, skip.")
-        continue
+    for scene_dir in scenes:
+        scene_name = scene_dir.name # scene_1
+        
+        # 1. Tìm video clip
+        # make_clip.py lưu file là "clip.mp4"
+        video_path = scene_dir / "clip.mp4"
+        if not video_path.exists():
+            # Fallback: tìm bất kỳ file mp4 nào
+            mp4s = list(scene_dir.glob("*.mp4"))
+            if mp4s:
+                video_path = mp4s[0]
+            else:
+                logger.warning(f"{scene_name}: No mp4 found, skipping.")
+                continue
 
-    # lấy file video (clip)
-    clip_files = [f for f in scene_clip_dir.glob("*.mp4")]
-    if not clip_files:
-        print(f"Scene {i}: No clip found, skip.")
-        continue
+        # 2. Tìm audio voice
+        # voice.py lưu tại voices/scene_1/audio_1.wav
+        audio_path = VOICES_DIR / scene_name / "audio_1.wav"
+        if not audio_path.exists():
+            logger.warning(f"{scene_name}: No voice audio found, skipping.")
+            continue
 
-    video_path = clip_files[0]
+        # 3. Trộn (Mix)
+        try:
+            video = VideoFileClip(str(video_path))
+            voice = AudioFileClip(str(audio_path))
 
-    # lấy audio
-    audio_path = scene_audio_dir / "audio_1.wav"
-    if not audio_path.exists():
-        print(f"Scene {i}: No audio file found, skip.")
-        continue
+            # Điều chỉnh âm lượng
+            if video.audio:
+                video = video.volumex(clip_vol)
+            
+            # Gán voice mới vào (giữ độ dài theo video)
+            final_audio = voice.volumex(voice_vol)
+            final_clip = video.set_audio(final_audio)
 
-    video = VideoFileClip(str(video_path)).volumex(clip_volume)
-    audio = AudioFileClip(str(audio_path)).volumex(voice_volume)
+            # 4. Xuất file
+            out_dir = AUDIO_CLIPS_DIR / scene_name
+            out_dir.mkdir(parents=True, exist_ok=True)
+            
+            out_path = out_dir / "final.mp4"
+            
+            final_clip.write_videofile(
+                str(out_path),
+                codec="libx264",
+                audio_codec="aac",
+                logger=None
+            )
+            logger.info(f"Mixed audio for {scene_name} -> {out_path}")
+            
+            # Close clips to free memory
+            video.close()
+            voice.close()
 
-    final = video.set_audio(audio)
+        except Exception as e:
+            logger.error(f"Failed to mix {scene_name}: {e}")
 
-    out_dir = AUDIO_CLIPS_DIR / f"scene_{i}"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    logger.info("Audio mixing finished.")
 
-    out_path = out_dir / f"{video_path.stem}_with_audio.mp4"
-    final.write_videofile(str(out_path), codec="libx264", audio_codec="aac")
-
-    print(f"Scene {i}: Created audio clip → {out_path}")
+if __name__ == "__main__":
+    main()
