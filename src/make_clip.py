@@ -1,13 +1,11 @@
-import logging
-import json
+import logging 
 import re
 from pathlib import Path
 from moviepy.editor import VideoFileClip, AudioFileClip
 
 from common import (
     CLIPS_DIR,
-    VOICES_DIR,
-    PROJECT_DIR,
+    VOICES_DIR, 
     SUBPLOTS_DIR,
     FRAMES_RANKING_DIR,
     list_scenes,
@@ -24,7 +22,7 @@ logger = logging.getLogger(__name__)
 def get_ranked_candidates(scene_name: str, fps: float):
     """
     Đọc danh sách các frame đã được AI chấm điểm từ folder frames_ranking.
-    Trả về danh sách các ứng viên: [(score, timestamp_start), ...]
+    Trả về danh sách các ứng viên: [(score, timestamp_start, frame_idx), ...]
     Sắp xếp từ điểm cao xuống thấp.
     """
     ranking_dir = FRAMES_RANKING_DIR / scene_name
@@ -43,7 +41,7 @@ def get_ranked_candidates(scene_name: str, fps: float):
             
             # Chuyển đổi frame index sang giây (Timestamp)
             timestamp = frame_idx / fps
-            candidates.append((score, timestamp))
+            candidates.append((score, timestamp, frame_idx))
     
     # Sắp xếp giảm dần theo điểm số (Score cao nhất lên đầu)
     return sorted(candidates, key=lambda x: x[0], reverse=True)
@@ -74,6 +72,7 @@ def main():
     # --- DANH SÁCH CÁC ĐOẠN ĐÃ DÙNG ---
     # Đây là bí quyết chống lặp: lưu lại start/end của các cảnh trước
     used_segments = []
+    used_frame_indices = set()
 
     # Load Video gốc
     try:
@@ -105,12 +104,20 @@ def main():
         # Lấy danh sách ứng viên từ AI (đã sort từ xịn nhất -> kém nhất)
         candidates = get_ranked_candidates(scene_name, video_fps)
         
-        # Duyệt qua từng ứng viên, chọn người đầu tiên KHÔNG bị trùng với used_segments
+        
         found_candidate = False
-        for score, ts in candidates:
+        for score, ts, frame_idx in candidates:
+        # 1) Nếu frame này đã được dùng cho subplot trước -> bỏ qua
+            if frame_idx in used_frame_indices:
+                logger.info(
+                    f"[{scene_name}] Skip frame {frame_idx} (already used in previous scene)"
+                )
+                continue
+        # 2) Nếu không overlap về thời gian với các đoạn trước -> chọn
             if not is_overlapping(ts, voice_dur, used_segments):
                 start_t = ts
-                logger.info(f"[{scene_name}] AI Selected: Score {score:.4f} at {ts:.2f}s (Unique)")
+                used_frame_indices.add(frame_idx)
+                logger.info(f"[{scene_name}] AI Selected: frame {frame_idx} | Score {score:.4f} at {ts:.2f}s (Unique)")
                 found_candidate = True
                 break
         
