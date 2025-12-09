@@ -1,3 +1,4 @@
+.DS_Store
 # Bỏ qua thư mục môi trường ảo
 .venv/
 .venv_gemini/
