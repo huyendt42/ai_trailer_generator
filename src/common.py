@@ -7,10 +7,10 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# The folder containing common.py is 'src/', so we go up one level to get the Project Root
+# Lấy đường dẫn gốc của Project (Thư mục cha của src/)
 ROOT = Path(__file__).resolve().parents[1]
 
-# Path to the main configuration file
+# Đường dẫn file cấu hình
 CONFIGS_PATH = ROOT / "configs.yaml"
 
 def parse_configs(configs_path: Path):
@@ -22,25 +22,25 @@ def parse_configs(configs_path: Path):
         logger.warning(f"Could not load configs.yaml: {e}. Using empty config.")
         return {}
 
-# 1. Load base configurations (e.g., model IDs, parameters)
+# 1. Load các cấu hình cơ bản
 configs = parse_configs(CONFIGS_PATH)
 
 # =========================================================
-# CRITICAL: SYNC WITH UI (STREAMLIT)
+# CẤU HÌNH ĐƯỜNG DẪN (ĐỒNG BỘ VỚI UI)
 # =========================================================
 
-# The UI saves files to 'projects/LOL', so we force the backend to use this path.
+# UI lưu file vào 'projects/LOL', backend bắt buộc dùng đúng đường dẫn này.
 PROJECT_DIR = ROOT / "projects" / "LOL"
 VIDEO_PATH = PROJECT_DIR / "video_input.mp4"
 
-# Override config values so other scripts (like frame.py) automatically use the new paths
+# Cập nhật ngược lại vào configs để các file khác dùng chung
 configs["video_path"] = str(VIDEO_PATH)
 configs["project_dir"] = "projects"
 configs["project_name"] = "LOL"
 
 # =========================================================
 
-# 2. Define Output Directories
+# 2. Định nghĩa các thư mục đầu ra (Output Directories)
 FRAMES_DIR = PROJECT_DIR / "frames"
 FRAMES_RANKING_DIR = PROJECT_DIR / "frames_ranking"
 SUBPLOTS_DIR = PROJECT_DIR / "subplots"
@@ -49,11 +49,11 @@ CLIPS_DIR = PROJECT_DIR / "clips"
 AUDIO_CLIPS_DIR = PROJECT_DIR / "audio_clips"
 TRAILER_DIR = PROJECT_DIR / "trailers"
 
-# Update 'frames_dir' in configs for scripts like image_retrieval.py
+# Cập nhật frames_dir vào config cho image_retrieval.py
 configs["frames_dir"] = str(FRAMES_DIR)
 
 def ensure_directories():
-    """Ensure all necessary project directories exist."""
+    """Tạo tất cả các thư mục cần thiết nếu chưa có."""
     dirs = [
         PROJECT_DIR,
         FRAMES_DIR,
@@ -67,15 +67,13 @@ def ensure_directories():
     for d in dirs:
         d.mkdir(parents=True, exist_ok=True)
 
-# Create directories immediately upon import
+# Tạo thư mục ngay khi import file này
 ensure_directories()
 
 def clean_project_data():
     """
-    CLEANUP FUNCTION:
-    Deletes temporary data from previous runs (frames, voices, etc.)
-    to ensure the new trailer is generated from the new video/plot.
-    Keeps 'video_input.mp4', 'input_plot.txt', and the 'trailers' output folder.
+    Hàm dọn dẹp dữ liệu cũ trước khi chạy mới.
+    Giữ lại video gốc và plot đầu vào.
     """
     logger.info("--- CLEANING UP OLD PROJECT DATA ---")
     
@@ -96,13 +94,13 @@ def clean_project_data():
             except Exception as e:
                 logger.error(f"Error deleting {folder.name}: {e}")
         
-        # Recreate the empty folder immediately
+        # Tạo lại thư mục rỗng ngay lập tức
         folder.mkdir(parents=True, exist_ok=True)
     
     logger.info("--- CLEANUP COMPLETED ---\n")
 
 def get_fps(video_path: Path):
-    """Return the FPS of the video using MoviePy."""
+    """Lấy FPS của video dùng MoviePy."""
     try:
         from moviepy.editor import VideoFileClip
         clip = VideoFileClip(str(video_path))
@@ -111,18 +109,18 @@ def get_fps(video_path: Path):
         return fps
     except Exception as e:
         logger.error(f"Error loading FPS: {e}")
-        return 24  # Default fallback
+        return 24  # Fallback mặc định
 
 def list_scenes(folder: Path):
     """
-    Return a sorted list of scene directories (e.g., scene_1, scene_2).
+    Trả về danh sách các thư mục scene (ví dụ: scene_1, scene_2) đã được sắp xếp.
     """
     if not folder.exists():
         return []
     
     scenes = [d for d in folder.iterdir() if d.is_dir() and d.name.startswith("scene_")]
     
-    # Sort numerically by the index in 'scene_X'
+    # Sắp xếp theo số thứ tự trong tên scene (scene_1, scene_2, ...)
     try:
         return sorted(scenes, key=lambda x: int(x.name.split("_")[1]))
     except ValueError:

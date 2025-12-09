@@ -1,28 +1,36 @@
-google-generativeai==0.5.4
+# --- Core UI ---
+streamlit
 
+# --- AI & LLM ---
+google-generativeai>=0.8.3
+
+# --- Video Processing ---
 moviepy
-ffmpeg-python
-pydub
-
 opencv-python
-Pillow
+scenedetect[opencv]  
+ffmpeg-python
+pytubefix            
 
-sentence-transformers==2.2.2
-transformers==4.33.2
-huggingface-hub==0.20.3
-sentencepiece
-
+# --- Audio & TTS ---
 TTS==0.21.3
-
+pydub
 audioread
 soundfile
 soxr
 
+# --- Image & ML ---
+Pillow
+sentence-transformers==2.2.2
+torch                
+transformers==4.33.2
+huggingface-hub==0.20.3
+sentencepiece
+scikit-learn
+
+# --- Utilities ---
 numpy
 scipy
 pandas
-scikit-learn
-
 PyYAML
 requests
 tqdm
