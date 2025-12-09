@@ -19,7 +19,7 @@ def detect_scenes(video_path: str):
     video_manager = VideoManager([video_path])
     scene_manager = SceneManager()
     
-    # Threshold 27.0 là độ nhạy, có thể chỉnh nếu cần
+    # Threshold 27.0 là độ nhạy
     scene_manager.add_detector(ContentDetector(threshold=27.0))
     video_manager.set_downscale_factor()
     video_manager.start()
@@ -54,16 +54,31 @@ def extract_keyframes(video_path: str, scene_list):
     for idx, (start, end) in enumerate(scene_list, start=1):
         scene_dir = FRAMES_DIR / f"scene_{idx}"
         scene_dir.mkdir(parents=True, exist_ok=True)
-
-        # Lấy 1 frame giữa làm đại diện
-        mid_frame = (start.get_frames() + end.get_frames()) // 2
         
-        cap.set(cv2.CAP_PROP_POS_FRAMES, mid_frame)
-        ret, frame = cap.read()
-        if ret:
-            cv2.imwrite(str(scene_dir / f"frame_{mid_frame}.jpg"), frame)
+        start_frame = start.get_frames()
+        end_frame = end.get_frames()
+        mid_frame = (start_frame + end_frame) // 2
+
+        # Dùng dict.fromkeys để tránh trùng index nếu scene quá ngắn
+        keyframes = list(dict.fromkeys([
+            start_frame + 3,  # Skip boundary blur
+            mid_frame,        # Best scene representation
+            end_frame - 3     # Avoid next scene transition
+        ]))
+
+        logger.info(f"Scene {idx}: extracting {len(keyframes)} keyframes.")
+
+        for kf in keyframes:
+            if kf < 0:
+                continue
+            cap.set(cv2.CAP_PROP_POS_FRAMES, kf)
+            ret, frame = cap.read()
+            if ret:
+                out_path = scene_dir / f"frame_{kf}.jpg"
+                cv2.imwrite(str(out_path), frame)
 
     cap.release()
+    cv2.destroyAllWindows()
 
 # --- MAIN ---
 ROOT = Path(__file__).resolve().parents[1]
@@ -85,5 +100,4 @@ else:
     
     # Vẫn extract ảnh để có dữ liệu cho các bước khác
     extract_keyframes(str(video_path), scenes)
-
-logger.info("\nScene detection completed\n")
+    logger.info("\nScene detection completed\n")
