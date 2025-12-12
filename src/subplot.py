@@ -17,18 +17,12 @@ logger = logging.getLogger(__name__)
 PLOT_PATH = PROJECT_DIR / "plot.txt"
 
 def get_best_available_model():
-    """
-    Tự động lấy danh sách model khả dụng từ Google và chọn cái tốt nhất.
-    """
     try:
-        logger.info("Đang kết nối Google để lấy danh sách model...")
         available_models = []
         for m in genai.list_models():
             if 'generateContent' in m.supported_generation_methods:
                 available_models.append(m.name)
-        
-        logger.info(f"Các model tìm thấy: {available_models}")
-        
+                
         # Danh sách ưu tiên (Model ổn định trước)
         priorities = [
             "models/gemini-1.5-flash",
@@ -45,7 +39,6 @@ def get_best_available_model():
         # Fallback
         if available_models:
             first = available_models[0]
-            logger.warning(f"Không có model ưu tiên, dùng tạm: {first}")
             return first
             
         raise RuntimeError("Không tìm thấy model nào hỗ trợ generateContent.")
@@ -65,7 +58,7 @@ def generate_with_retry(model, prompt, retries=3):
         except exceptions.ResourceExhausted:
             # Lỗi 429: Hết lượt gọi -> Chờ và thử lại
             wait_time = 30 * (attempt + 1)
-            logger.warning(f"⚠️ Hết Quota (429). Đang nghỉ {wait_time}s rồi thử lại...")
+            logger.warning(f"Hết Quota (429). Đang nghỉ {wait_time}s rồi thử lại...")
             time.sleep(wait_time)
             continue
         except Exception as e:
