@@ -36,7 +36,7 @@ sentencepiece
 scikit-learn
 
 # --- Utilities ---
-numpy==1.26.4
+numpy==1.22.0
 scipy==1.11.4
 pandas
 PyYAML
