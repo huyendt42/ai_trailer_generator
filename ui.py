@@ -19,12 +19,10 @@ st.markdown("""
         padding-left: 3rem;
         padding-right: 3rem;
     }
-    
-    /* 2. Ẩn menu mặc định của Streamlit cho sạch */
+
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    
-    /* 3. Style tiêu đề */
+
     h1 {
         font-size: 1.8rem !important;
         margin-bottom: 0rem !important;
@@ -32,15 +30,13 @@ st.markdown("""
         border-bottom: 1px solid #333;
         padding-bottom: 10px;
     }
-    
-    /* 4. Tùy chỉnh khung Input */
+
     .stTextArea textarea {
         background-color: #0E1117;
         border: 1px solid #333;
         color: #ddd;
     }
     
-    /* 5. Nút bấm: Primary Button nổi bật */
     div.stButton > button:first-child {
         border-radius: 8px;
         height: 3em;
@@ -68,7 +64,7 @@ col_left, col_right = st.columns([5, 6], gap="large")
 
 # === CỘT TRÁI: VIDEO INPUT ===
 with col_left:
-    st.subheader("1. Media Input")
+    st.subheader("1. INPUT VIDEO")
     
     # Upload gọn gàng
     uploaded_video = st.file_uploader(
@@ -81,7 +77,7 @@ with col_left:
     if uploaded_video:
         PROJECT.mkdir(parents=True, exist_ok=True)
         VIDEO_PATH.write_bytes(uploaded_video.read())
-        # Hiển thị video preview (vừa vặn khung)
+        # Hiển thị video preview
         st.video(str(VIDEO_PATH))
     elif VIDEO_PATH.exists():
         st.video(str(VIDEO_PATH))
@@ -91,7 +87,7 @@ with col_left:
 
 # === CỘT PHẢI: PLOT & ACTIONS ===
 with col_right:
-    st.subheader("2. Subplot")
+    st.subheader("2.INPUT SUBPLOT")
     
     # Text Area nhập Plot
     default_plot = PLOT_PATH.read_text(encoding="utf-8") if PLOT_PATH.exists() else ""
