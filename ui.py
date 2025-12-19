@@ -259,7 +259,7 @@ def render_input_page():
         # Video Preview 
         if VIDEO_PATH.exists():
             st.write("")
-            st.video(str(VIDEO_PATH))
+            st.video(VIDEO_PATH.read_bytes())
         else:
             st.info("Please upload a video to start.")
 
@@ -279,40 +279,23 @@ def render_input_page():
 
             # --- IGDB UI (added, old manual kept) ---
             if st.session_state.plot_mode == "IGDB API":
-                st.caption("Fetch plot from IGDB using your Twitch credentials (Client ID + Access Token).")
-                if "igdb_client_id" not in st.session_state:
-                    st.session_state.igdb_client_id = IGDB_CLIENT_ID
-                if "igdb_token" not in st.session_state:
-                    st.session_state.igdb_token = IGDB_ACCESS_TOKEN
+                st.caption("Fetch plot from IGDB ")
+                
                 if "igdb_game" not in st.session_state: st.session_state.igdb_game = ""
 
-                c1, c2 = st.columns([2, 2], gap="small")
-                with c1:
-                    st.session_state.igdb_game = st.text_input(
-                        "Game name",
-                        value=st.session_state.igdb_game,
-                        placeholder="e.g., League of Legends, Hades, Valorant..."
-                    )
-                with c2:
-                    st.session_state.igdb_client_id = st.text_input(
-                        "Twitch Client ID",
-                        value=st.session_state.igdb_client_id,
-                        placeholder="Paste Client ID here"
-                    )
-
-                st.session_state.igdb_token = st.text_input(
-                    "Access Token",
-                    value=st.session_state.igdb_token,
-                    placeholder="Paste access_token here",
+                st.session_state.igdb_game = st.text_input(
+                    "Game name",
+                    value=st.session_state.igdb_game,
+                    placeholder="e.g., League of Legends, Hades, Valorant..."
                 )
-
+                
                 # Fetch button
                 if st.button("FETCH PLOT FROM IGDB"):
                     with st.spinner("Calling IGDB..."):
                         ok, msg = run_igdb_plot_fetch(
                             st.session_state.igdb_game,
-                            st.session_state.igdb_client_id,
-                            st.session_state.igdb_token
+                            IGDB_CLIENT_ID,
+                            IGDB_ACCESS_TOKEN
                         )
                     if not ok:
                         st.error(msg)
@@ -425,7 +408,7 @@ def render_processing_page():
             if files:
                 latest = files[-1]
                 c1, c2 = st.columns([2, 1])
-                with c1: st.video(str(latest))
+                with c1: st.video(latest.read_bytes())
                 with c2:
                     with st.container(border=True):
                         st.markdown("### RESULT")
@@ -433,7 +416,9 @@ def render_processing_page():
                         with open(latest, "rb") as f:
                             st.download_button("DOWNLOAD MP4", f, file_name=latest.name, mime="video/mp4")
                         st.write("")
-                        if st.button("START NEW PROJECT"): go_to_input()
+                        if st.button("START NEW PROJECT"): 
+                            st.session_state.plot_text = ""
+                            go_to_input()
                     
 # MAIN ROUTER
 if st.session_state.page == 'input': render_input_page()
