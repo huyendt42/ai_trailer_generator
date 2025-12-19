@@ -151,12 +151,18 @@ TRAILERS = PROJECT / "trailers"
 CHECKPOINT_DIR = PROJECT / ".checkpoints"
 PYTHON = sys.executable
 
+IGDB_CLIENT_ID = "dmz1ufs9byvwf027un57323nfv9fa6"
+IGDB_ACCESS_TOKEN = "h730k3leqtsztmen0vfd6rww4ezako"
 # --- 3. STATE ---
 if 'page' not in st.session_state: st.session_state.page = 'input'
 if 'logs' not in st.session_state: st.session_state.logs = [] 
 if 'pid' not in st.session_state: st.session_state.pid = None
 if 'is_running' not in st.session_state: st.session_state.is_running = False
 if 'generation_done' not in st.session_state: st.session_state.generation_done = False
+
+if "plot_mode" not in st.session_state: st.session_state.plot_mode = "Manual"
+if "plot_text" not in st.session_state:
+    st.session_state.plot_text = PLOT_PATH.read_text(encoding="utf-8") if PLOT_PATH.exists() else ""
 
 # --- 4. HELPERS ---
 def clean_workspace():
@@ -178,7 +184,39 @@ def go_to_input():
     st.session_state.generation_done = False
     st.session_state.is_running = False
     st.rerun()
+def save_plot_to_file(text: str):
+    PROJECT.mkdir(parents=True, exist_ok=True)
+    PLOT_PATH.write_text(text or "", encoding="utf-8")
 
+def run_igdb_plot_fetch(game_name: str, client_id: str, access_token: str) -> tuple[bool, str]:
+    """
+    Call src/plot_igdb.py to fetch plot and write into PLOT_PATH.
+    Returns: (ok, message)
+    """
+    if not game_name.strip():
+        return (False, "Missing game name.")
+    if not client_id.strip() or not access_token.strip():
+        return (False, "Missing IGDB credentials (Client ID / Access Token).")
+
+    
+    #   --game "<name>" --out "<path>" --client-id "<id>" --token "<token>"
+    cmd = [
+        PYTHON, "src/plot_igdb.py",
+        "--game", game_name.strip(),
+        "--out", str(PLOT_PATH),
+        "--client-id", client_id.strip(),
+        "--token", access_token.strip()
+    ]
+
+    try:
+        res = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+        out = (res.stdout or "") + "\n" + (res.stderr or "")
+        if res.returncode != 0:
+            return (False, f"plot_igdb.py failed.\n{out.strip()}")
+        return (True, out.strip() if out.strip() else "Fetched plot successfully.")
+    except Exception as e:
+        return (False, f"Error running plot_igdb.py: {e}")
+    
 # ==========================================
 # PAGE 1: INPUT DASHBOARD
 # ==========================================
@@ -226,33 +264,97 @@ def render_input_page():
     # --- RIGHT: SCRIPT & ACTION ---
     with c_script:
         with st.container(border=True):
-            st.markdown("### SUBPLOT SCRIPT")
+            st.markdown("### PLOT / SCRIPT")
             st.write("")
-            
-            default_plot = PLOT_PATH.read_text(encoding="utf-8") if PLOT_PATH.exists() else ""
-            plot_text = st.text_area("Script", value=default_plot, height=350, placeholder="Paste your storyline here...", label_visibility="collapsed")
-            
+
+            # NEW: mode selection
+            st.session_state.plot_mode = st.radio(
+                "Plot mode",
+                options=["Manual", "IGDB API"],
+                horizontal=True,
+                index=0 if st.session_state.plot_mode == "Manual" else 1
+            )
+
+            # --- IGDB UI (added, old manual kept) ---
+            if st.session_state.plot_mode == "IGDB API":
+                st.caption("Fetch plot from IGDB using your Twitch credentials (Client ID + Access Token).")
+                if "igdb_client_id" not in st.session_state:
+                    st.session_state.igdb_client_id = IGDB_CLIENT_ID
+                if "igdb_token" not in st.session_state:
+                    st.session_state.igdb_token = IGDB_ACCESS_TOKEN
+                if "igdb_game" not in st.session_state: st.session_state.igdb_game = ""
+
+                c1, c2 = st.columns([2, 2], gap="small")
+                with c1:
+                    st.session_state.igdb_game = st.text_input(
+                        "Game name",
+                        value=st.session_state.igdb_game,
+                        placeholder="e.g., League of Legends, Hades, Valorant..."
+                    )
+                with c2:
+                    st.session_state.igdb_client_id = st.text_input(
+                        "Twitch Client ID",
+                        value=st.session_state.igdb_client_id,
+                        placeholder="Paste Client ID here"
+                    )
+
+                st.session_state.igdb_token = st.text_input(
+                    "Access Token",
+                    value=st.session_state.igdb_token,
+                    placeholder="Paste access_token here",
+                )
+
+                # Fetch button
+                if st.button("FETCH PLOT FROM IGDB"):
+                    with st.spinner("Calling IGDB..."):
+                        ok, msg = run_igdb_plot_fetch(
+                            st.session_state.igdb_game,
+                            st.session_state.igdb_client_id,
+                            st.session_state.igdb_token
+                        )
+                    if not ok:
+                        st.error(msg)
+                    else:
+                        st.toast("Plot fetched.")
+                        # Reload text area from file
+                        st.session_state.plot_text = PLOT_PATH.read_text(encoding="utf-8") if PLOT_PATH.exists() else ""
+                        st.info(msg if len(msg) < 400 else "Fetched. (log too long)")
+
+            # --- Existing manual plot editor (kept) ---
+            # NOTE: even in IGDB mode, we still show the editor so user can tweak.
+            plot_text = st.text_area(
+                "Script",
+                value=st.session_state.plot_text,
+                height=350,
+                placeholder="Paste your storyline here...",
+                label_visibility="collapsed"
+            )
+            st.session_state.plot_text = plot_text
+
             st.write("")
-            
             c_save, c_run = st.columns([1, 2], gap="small")
+
             with c_save:
                 if st.button("SAVE PLOT"):
-                    PROJECT.mkdir(parents=True, exist_ok=True)
-                    PLOT_PATH.write_text(plot_text, encoding="utf-8")
+                    save_plot_to_file(st.session_state.plot_text)
                     st.toast("Saved.")
+
             with c_run:
                 if st.button("LAUNCH PIPELINE"):
-                    if not VIDEO_PATH.exists() or not plot_text.strip():
+                    if not VIDEO_PATH.exists() or not st.session_state.plot_text.strip():
                         st.error("Missing Media or Script.")
                     else:
-                        PROJECT.mkdir(parents=True, exist_ok=True)
-                        PLOT_PATH.write_text(plot_text, encoding="utf-8")
+                        # AUTO-SAVE plot before run (existing behavior kept)
+                        save_plot_to_file(st.session_state.plot_text)
+
+                        # Old code kept:
+                        # clean_workspace()  # (still used)
                         clean_workspace()
+
                         st.session_state.is_running = True
                         st.session_state.logs = []
                         st.session_state.generation_done = False
                         go_to_processing()
-
 # ==========================================
 # PAGE 2: PROCESSING CONSOLE
 # ==========================================
