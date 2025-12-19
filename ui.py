@@ -52,8 +52,8 @@ st.markdown("""
 
     /* 3. INPUT FIELDS */
     .stTextInput input, .stTextArea textarea {
-        background-color: #021526 !important; /* Nền xanh đen */
-        border: 1px solid #03346E !important; /* Viền xanh */
+        background-color: #021526 !important; 
+        border: 1px solid #03346E !important; 
         color: #FFFFFF !important;
         border-radius: 4px;
         font-family: 'Consolas', monospace;
@@ -216,7 +216,7 @@ def render_input_page():
                                     st.rerun()
                                 except Exception as e: st.error(str(e))
 
-        # Video Preview (Chỉ hiện ở trang Input)
+        # Video Preview 
         if VIDEO_PATH.exists():
             st.write("")
             st.video(str(VIDEO_PATH))
@@ -226,7 +226,7 @@ def render_input_page():
     # --- RIGHT: SCRIPT & ACTION ---
     with c_script:
         with st.container(border=True):
-            st.markdown("### NARRATIVE SCRIPT")
+            st.markdown("### SUBPLOT SCRIPT")
             st.write("")
             
             default_plot = PLOT_PATH.read_text(encoding="utf-8") if PLOT_PATH.exists() else ""
@@ -257,7 +257,7 @@ def render_input_page():
 # PAGE 2: PROCESSING CONSOLE
 # ==========================================
 def render_processing_page():
-    st.markdown('<div class="hero-text">PRODUCTION CONSOLE</div>', unsafe_allow_html=True)
+    st.markdown('<div class="hero-text">AI TRAILER GENERATOR</div>', unsafe_allow_html=True)
     
     # Status Bar
     c_stat, c_ctrl = st.columns([6, 2])
@@ -279,7 +279,7 @@ def render_processing_page():
                 st.session_state.is_running = True
                 st.rerun()
     
-    # Terminal Log (Không hiện video input ở đây)
+    # Terminal Log
     with st.container(border=True):
         st.markdown("### SYSTEM LOGS")
         log_box = st.empty()
@@ -313,7 +313,7 @@ def render_processing_page():
             st.session_state.generation_done = True
             st.rerun()
 
-    # Result (Chỉ hiện khi xong)
+    # Result 
     if st.session_state.generation_done:
         st.divider()
         if TRAILERS.exists():
