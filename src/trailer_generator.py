@@ -1,100 +1,76 @@
-from pathlib import Path
-import subprocess
 import sys
+import subprocess
+from pathlib import Path
+import shutil
 
-# Lấy thư mục gốc project (cha của thư mục chứa file này)
+# --- CẤU HÌNH ---
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 PROJECT = ROOT / "projects" / "LOL"
+CHECKPOINT_DIR = PROJECT / ".checkpoints" 
 
+# ĐỊNH NGHĨA QUY TRÌNH
 STEPS = [
-    ("Plot retrieval", "plot_retrieval.py"),
-    ("Subplot generation", "subplot.py"),
-    ("Frame extraction", "frame.py"),
-    ("Frame ranking (CLIP)", "image_retrieval.py"),
-    ("Voice generation (TTS)", "voice.py"),
-    ("Clip creation", "make_clip.py"),
-    ("Audio clip creation", "audio_clip.py"),
-    ("Final trailer assembly", "join_clip.py"),
+    {"name": "Phase 1: Plot Retrieval", "script": "plot_retrieval.py"},
+    {"name": "Phase 2: Subplot Generation", "script": "subplot.py"},
+    {"name": "Phase 3: Frame Extraction", "script": "frame.py"},
+    {"name": "Phase 4: Frame Ranking", "script": "image_retrieval.py"},
+    {"name": "Phase 5: Voice Gen", "script": "voice.py"},
+    {"name": "Phase 6: Clip Creation", "script": "make_clip.py"},
+    {"name": "Phase 7: Audio Mixing", "script": "audio_clip.py"},
+    {"name": "Phase 8: Final Assembly", "script": "join_clip.py"} 
 ]
 
+def run_pipeline():
+    python_exe = sys.executable
+    print("--- PIPELINE ORCHESTRATOR STARTED ---")
+    sys.stdout.flush()
+    
+    CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+    
+    total = len(STEPS)
+    start_index = 0
+    
+    for i, step in enumerate(STEPS):
+        marker_name = f"{i+1}_{step['script']}.done"
+        marker_path = CHECKPOINT_DIR / marker_name
+        
+        if marker_path.exists():
+            print(f"[STEP {i+1}/{total}] SKIPPED: {step['name']} (Completed)")
+            start_index = i + 1
+        else:
+            break 
+            
+    sys.stdout.flush()
 
-def ensure_trailers_dir():
-    """Chỉ tạo thư mục trailers nếu chưa tồn tại."""
-    trailers_dir = PROJECT / "trailers"
-    trailers_dir.mkdir(parents=True, exist_ok=True)
-
-
-def print_progress(step_idx: int, total_steps: int, step_name: str):
-    """Hiển thị progress bar đơn giản theo số bước."""
-    bar_len = 30
-    progress = step_idx / total_steps
-    filled = int(bar_len * progress)
-    bar = "#" * filled + "-" * (bar_len - filled)
-    print(f"\n[{step_idx}/{total_steps}] {step_name}")
-    print(f"[{bar}] {progress * 100:5.1f}%\n")
-
-
-def run_step(step_idx: int, total_steps: int, step_name: str, script_name: str) -> bool:
-    print_progress(step_idx, total_steps, step_name)
-
-    script_path = SRC / script_name
-    if not script_path.exists():
-        print(f"ERROR: Không tìm thấy file: {script_path}")
-        return False
-
-    result = subprocess.run(
-        [sys.executable, str(script_path)],
-        cwd=ROOT,
-    )
-
-    if result.returncode != 0:
-        print(f"ERROR: Lỗi khi chạy {script_name} (exit code {result.returncode})")
-        return False
-
-    print(f"Hoàn thành: {step_name}")
-    return True
-
-
-def check_requirements() -> bool:
-    """Kiểm tra nhanh một vài input quan trọng."""
-    missing = []
-
-    # chỉ cần file plot gốc
-    input_plot = PROJECT / "input_plot.txt"
-    if not input_plot.exists():
-        missing.append("projects/LOL/input_plot.txt")
-
-    # cảnh báo nhẹ nếu thiếu sample_voice (không chặn pipeline)
-    sample_voice = ROOT / "voices" / "sample_voice.wav"
-    if not sample_voice.exists():
-        print("Cảnh báo: Không tìm thấy voices/sample_voice.wav (TTS clone voice có thể không dùng được).")
-
-    if missing:
-        print("Thiếu các file sau, vui lòng bổ sung trước khi chạy:")
-        for m in missing:
-            print(" -", m)
-        return False
-
-    return True
-
-
-def main():
-    if not check_requirements():
-        return
-
-    ensure_trailers_dir()
-
-    total_steps = len(STEPS)
-    for idx, (step_name, script) in enumerate(STEPS, start=1):
-        ok = run_step(idx, total_steps, step_name, script)
-        if not ok:
-            print("Pipeline dừng do lỗi.")
-            return
-
-    print("\nPipeline hoàn tất.")
-    print("Kiểm tra thư mục: projects/LOL/trailers/")
-
+    for i in range(start_index, total):
+        step = STEPS[i]
+        script_name = step["script"]
+        step_name = step["name"]
+        
+        marker_name = f"{i+1}_{script_name}.done"
+        marker_path = CHECKPOINT_DIR / marker_name
+        
+        print(f"[STEP {i+1}/{total}] RUNNING: {step_name}...")
+        sys.stdout.flush()
+        
+        script_path = SRC / script_name
+        if not script_path.exists():
+            print(f"ERROR: Missing script {script_name}")
+            sys.exit(1)
+            
+        try:
+            subprocess.run([python_exe, str(script_path)], cwd=ROOT, check=True, text=True)
+            marker_path.touch()
+            print(f"[STEP {i+1}/{total}] DONE: {step_name}")
+            
+        except subprocess.CalledProcessError:
+            print(f"FAILED at {step_name}")
+            if marker_path.exists(): marker_path.unlink()
+            sys.exit(1)
+            
+    print("--- PIPELINE FINISHED SUCCESSFULLY ---")
+    sys.stdout.flush()
 
 if __name__ == "__main__":
-    main()
+    run_pipeline()
