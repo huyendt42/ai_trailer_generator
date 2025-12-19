@@ -13,6 +13,22 @@ ROOT = Path(__file__).resolve().parents[1]
 # Đường dẫn file cấu hình
 CONFIGS_PATH = ROOT / "configs.yaml"
 
+def pick_device(cfg_device: str) -> str:
+    d = (cfg_device or "auto").lower()
+    if d != "auto":
+        return d
+
+    try:
+        import torch
+        if torch.cuda.is_available():
+            return "cuda"
+        # Apple Silicon
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return "mps"
+    except Exception:
+        pass
+    return "cpu"
+
 def parse_configs(configs_path: Path):
     """Load configuration from YAML file."""
     try:
@@ -28,16 +44,20 @@ configs = parse_configs(CONFIGS_PATH)
 # =========================================================
 # CẤU HÌNH ĐƯỜNG DẪN (ĐỒNG BỘ VỚI UI)
 # =========================================================
+project_dir_name = configs.get("project_dir", "projects")
+project_name = configs.get("project_name", "LOL")
 
-# UI lưu file vào 'projects/LOL', backend bắt buộc dùng đúng đường dẫn này.
-PROJECT_DIR = ROOT / "projects" / "LOL"
+PROJECT_DIR = ROOT / project_dir_name / project_name
 VIDEO_PATH = PROJECT_DIR / "video_input.mp4"
 
-# Cập nhật ngược lại vào configs để các file khác dùng chung
+configs["video_path"] = str(VIDEO_PATH) 
 configs["video_path"] = str(VIDEO_PATH)
-configs["project_dir"] = "projects"
-configs["project_name"] = "LOL"
+configs["project_dir"] = project_dir_name
+configs["project_name"] = project_name
+configs.setdefault("voice", {})
+configs["voice"]["device"] = pick_device(configs["voice"].get("device", "auto"))
 
+#configs["frame_ranking"]["device"] = pick_device(configs["frame_ranking"].get("device", "auto"))
 # =========================================================
 
 # 2. Định nghĩa các thư mục đầu ra (Output Directories)

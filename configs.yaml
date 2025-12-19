@@ -2,7 +2,7 @@ project_dir: 'projects'
 
 project_name: 'LOL'
 
-plot_filename: input_plot.txt
+plot_filename: plot.txt
 
 video_path: 'videos/video.mp4'
 
@@ -19,7 +19,7 @@ subplot:
   n_subplots: 6
 voice:
   model_id: 'tts_models/multilingual/multi-dataset/xtts_v2'
-  device: 'cpu'
+  device: 'auto'
   reference_voice_path: 'voices/sample_voice.wav'
   tts_language: 'en'
   n_audios: 1

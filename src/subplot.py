@@ -81,16 +81,44 @@ def generate_subplots_with_gemini(plot: str, n_subplots: int = 6) -> list[str]:
     model = genai.GenerativeModel(model_name)
 
     prompt = f"""
-    You are a scriptwriter. Break the following plot into exactly {n_subplots} cinematic scenes.
-    
-    Requirements:
-    - Output ONLY a JSON array of strings.
-    - Each string is a short description of a scene.
-    - No markdown, no "json" tags, no extra text.
-    
+    You are a plot condensation and structuring assistant for video trailers.
+
+    Your task is to produce exactly {n_subplots} subplots suitable for a game trailer,
+    based on the given plot.
+
+    General rules:
+    - Preserve the original meaning, tone, genre, and game identity.
+    - Do NOT introduce unrelated characters, events, or storylines.
+    - All subplots must stay within the narrative world implied by the plot.
+    - The goal is NOT to retell the full story, but to extract or construct
+    a concise narrative suitable for a short video trailer.
+    - Output ONLY a JSON array of strings. No explanations, no markdown.
+
+    Adaptive behavior:
+    1) If the plot is very short or lacks enough information:
+    - Gently expand the plot by elaborating on IMPLIED actions, atmosphere, progression, or conflict.
+    - Expansion must remain faithful to the original plot and revolve around the same core ideas.
+    - Do NOT invent major new story arcs or change the meaning.
+
+    2) If the plot is long or detailed:
+    - Condense and summarize the plot into key moments.
+    - Remove minor details, side descriptions, or background exposition.
+    - Focus on elements that would visually translate well into a trailer
+        (e.g., action, tension, progression, mood, competition).
+
+    3) In all cases:
+    - Split the resulting condensed narrative into exactly {n_subplots} subplots.
+    - Each subplot should represent a distinct moment or phase suitable for a trailer scene.
+
+    Style constraints:
+    - Each subplot should be concise (1–2 sentences).
+    - Avoid excessive cinematic exaggeration unless it is clearly implied.
+    - The combined meaning of all subplots should reflect the essence of the original plot,
+    not its full length.
+
     PLOT:
     {plot}
-    """
+        """
 
     logger.info(f"Gửi lệnh cho model {model_name}...")
     
