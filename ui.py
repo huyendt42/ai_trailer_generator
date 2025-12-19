@@ -28,7 +28,7 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* 1. NỀN CHÍNH (BLACK) */
+    /* 1. NỀN CHÍNH */
     .stApp {
         background-color: #000000;
         color: #FFFFFF;
@@ -121,7 +121,7 @@ st.markdown("""
     .terminal-box {
         font-family: 'Consolas', monospace;
         background-color: #000000;
-        color: #FFFFFF; /* [EDIT] Chữ trắng theo yêu cầu */
+        color: #FFFFFF; 
         padding: 15px;
         border: 1px solid #333;
         font-size: 13px;
