@@ -151,6 +151,8 @@ TRAILERS = PROJECT / "trailers"
 CHECKPOINT_DIR = PROJECT / ".checkpoints"
 PYTHON = sys.executable
 
+#IGDB token hard-coded for demo purposes only
+
 IGDB_CLIENT_ID = "dmz1ufs9byvwf027un57323nfv9fa6"
 IGDB_ACCESS_TOKEN = "h730k3leqtsztmen0vfd6rww4ezako"
 # --- 3. STATE ---
