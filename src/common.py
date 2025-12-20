@@ -51,7 +51,6 @@ PROJECT_DIR = ROOT / project_dir_name / project_name
 VIDEO_PATH = PROJECT_DIR / "video_input.mp4"
 
 configs["video_path"] = str(VIDEO_PATH) 
-configs["video_path"] = str(VIDEO_PATH)
 configs["project_dir"] = project_dir_name
 configs["project_name"] = project_name
 configs.setdefault("voice", {})
