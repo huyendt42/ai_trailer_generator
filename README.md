@@ -3,12 +3,26 @@
 An AI-powered system that automatically generates cinematic game trailers from gameplay footage and narrative plots using Large Language Models (Gemini) and Vision-Language Models (CLIP).
 
 ## Setup Guide
+### 1. Installing FFmpeg 
 
-### 1. Install FFmpeg (Required)
-The system requires FFmpeg for video and audio processing.
-* **Windows:** Download FFmpeg, extract it, and add the `bin` folder to your System PATH variables.
-* **Linux (Ubuntu/Debian):** `sudo apt update && sudo apt install ffmpeg`
-* **macOS:** `brew install ffmpeg`
+FFmpeg is required for video processing and MP4 generation.  
+Make sure FFmpeg is installed and available in your system PATH.
+
+**Windows**
+- Download from https://ffmpeg.org/download.html
+- Extract and add `ffmpeg/bin` to your system PATH  
+- Or install via Chocolatey:
+```bash
+choco install ffmpeg
+```
+**macOS**
+```bash
+brew install ffmpeg
+```
+**Linux (Ubuntu / Debian)**
+```bash
+sudo apt update && sudo apt install ffmpeg
+```
 
 ### 2. Create Virtual Environment
 Create an isolated environment to prevent library conflicts.
@@ -33,6 +47,8 @@ pip install -r requirements.txt --no-cache-dir
 
 ### 4. Configure API Key
 Set up your Google Gemini API key.
+
+(Gemini API key can be obtained through [Google AI studio](https://aistudio.google.com/app/api-keys)
 
 **Linux / macOS:**
 ```bash
