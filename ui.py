@@ -315,6 +315,16 @@ def render_input_page():
                 label_visibility="collapsed"
             )
             st.session_state.plot_text = plot_text
+            
+            # --- [NEW SECTION: BACKGROUND MUSIC] ---
+            st.write("")
+            st.markdown("### BACKGROUND MUSIC")
+            music_prompt = st.text_input(
+                "Music Description",
+                value="Epic orchestral game trailer music, dramatic, tension builder",
+                placeholder="Describe the mood (e.g., Lo-fi, Rock, Epic...)",
+                label_visibility="collapsed"
+            )
 
             st.write("")
             c_save, c_run = st.columns([1, 2], gap="small")
@@ -329,11 +339,13 @@ def render_input_page():
                     if not VIDEO_PATH.exists() or not st.session_state.plot_text.strip():
                         st.error("Missing Media or Script.")
                     else:
-                        # AUTO-SAVE plot before run (existing behavior kept)
+                        # AUTO-SAVE plot before run
                         save_plot_to_file(st.session_state.plot_text)
 
-                        # Old code kept:
-                        # clean_workspace()  # (still used)
+                        # [NEW]: SAVE MUSIC PROMPT
+                        PROJECT.mkdir(parents=True, exist_ok=True)
+                        (PROJECT / "music_prompt.txt").write_text(music_prompt, encoding="utf-8")
+
                         clean_workspace()
 
                         st.session_state.is_running = True
